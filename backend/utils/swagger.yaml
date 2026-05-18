@@ -1,0 +1,310 @@
+openapi: 3.0.0
+info:
+  title: TaskFlow API
+  description: Task Management System REST API with JWT Authentication and Role-Based Access Control
+  version: 1.0.0
+  contact:
+    name: TaskFlow Support
+    email: support@taskflow.dev
+
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Development Server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "64abc123def456"
+        name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          example: "john@example.com"
+        role:
+          type: string
+          enum: [user, admin]
+          example: "user"
+        createdAt:
+          type: string
+          format: date-time
+
+    Task:
+      type: object
+      properties:
+        _id:
+          type: string
+        title:
+          type: string
+          example: "Design landing page"
+        description:
+          type: string
+          example: "Create a modern responsive landing page"
+        status:
+          type: string
+          enum: [todo, in-progress, completed]
+          example: "todo"
+        priority:
+          type: string
+          enum: [low, medium, high]
+          example: "medium"
+        dueDate:
+          type: string
+          format: date-time
+          nullable: true
+        user:
+          $ref: '#/components/schemas/User'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+            user:
+              $ref: '#/components/schemas/User'
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+
+paths:
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                  example: "John Doe"
+                email:
+                  type: string
+                  example: "john@example.com"
+                password:
+                  type: string
+                  example: "password123"
+                role:
+                  type: string
+                  enum: [user, admin]
+                  example: "user"
+      responses:
+        201:
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        409:
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Login and get JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  example: "john@example.com"
+                password:
+                  type: string
+                  example: "password123"
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        401:
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/me:
+    get:
+      tags: [Authentication]
+      summary: Get current logged-in user
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: Current user data
+        401:
+          description: Unauthorized
+
+  /tasks:
+    get:
+      tags: [Tasks]
+      summary: Get all tasks (filtered by role)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [todo, in-progress, completed]
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: Tasks fetched successfully
+        401:
+          description: Unauthorized
+
+    post:
+      tags: [Tasks]
+      summary: Create a new task
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                  example: "Build REST API"
+                description:
+                  type: string
+                  example: "Create endpoints for task management"
+                status:
+                  type: string
+                  enum: [todo, in-progress, completed]
+                  default: todo
+                priority:
+                  type: string
+                  enum: [low, medium, high]
+                  default: medium
+                dueDate:
+                  type: string
+                  format: date-time
+                  nullable: true
+      responses:
+        201:
+          description: Task created successfully
+        400:
+          description: Validation error
+        401:
+          description: Unauthorized
+
+  /tasks/{id}:
+    put:
+      tags: [Tasks]
+      summary: Update a task
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                status:
+                  type: string
+                  enum: [todo, in-progress, completed]
+                priority:
+                  type: string
+                  enum: [low, medium, high]
+                dueDate:
+                  type: string
+                  format: date-time
+      responses:
+        200:
+          description: Task updated successfully
+        403:
+          description: Forbidden
+        404:
+          description: Task not found
+
+    delete:
+      tags: [Tasks]
+      summary: Delete a task
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Task deleted successfully
+        403:
+          description: Forbidden
+        404:
+          description: Task not found
