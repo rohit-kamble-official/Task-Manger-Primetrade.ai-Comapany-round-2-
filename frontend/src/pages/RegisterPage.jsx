@@ -49,7 +49,7 @@ export default function RegisterPage() {
             ))}
           </ul>
         </div>
-        <p className="text-blue-300 text-sm">© 2024 TaskFlow. All rights reserved.</p>
+        <p className="text-blue-300 text-sm">© 2026 TaskFlow. All rights reserved.</p>
       </div>
 
       {/* Right panel */}
