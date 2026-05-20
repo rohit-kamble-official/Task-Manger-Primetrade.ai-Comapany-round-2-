@@ -50,16 +50,19 @@ app.use(errorHandler);
 // Connect MongoDB & Start Server
 const PORT = process.env.PORT || 5000;
 
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/taskflow')
+console.log("MONGO_URI:", process.env.MONGO_URI ? "Exists" : "Missing");
+
+mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('✅ MongoDB Connected');
+
     app.listen(PORT, () => {
-      console.log(`🚀 TaskFlow API running on http://localhost:${PORT}`);
-      console.log(`📚 API Docs: http://localhost:${PORT}/api/docs`);
+      console.log(`🚀 TaskFlow API running on ${PORT}`);
     });
   })
   .catch((err) => {
-    console.error('❌ MongoDB connection failed:', err.message);
+    console.error('❌ MongoDB connection failed:');
+    console.error(err);
     process.exit(1);
   });
 
